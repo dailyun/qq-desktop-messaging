@@ -1,0 +1,4 @@
+interface:
+  display_name: "QQ Desktop Messaging"
+  short_description: "Read QQ chats and send text or images from Windows QQ."
+  default_prompt: "Use $qq-desktop-messaging to inspect QQ chats, force vision mode, or send text or images to a specific friend or group."
