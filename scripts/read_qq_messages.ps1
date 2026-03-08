@@ -3,7 +3,7 @@ param(
     [string]$ConversationName,
     [int]$Last = 20,
     [string]$WindowNameRegex = "QQ",
-    [ValidateSet("auto", "uia", "vision")]
+    [ValidateSet("auto", "adapter", "uia", "vision")]
     [string]$Mode = "auto",
     [string]$OcrLanguage = "chi_sim+eng"
 )
@@ -13,6 +13,45 @@ $ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\qq_uia_common.ps1"
 . "$PSScriptRoot\qq_visual_common.ps1"
+. "$PSScriptRoot\qq_napcat_common.ps1"
+
+function Invoke-AdapterRead {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetConversation,
+        [Parameter(Mandatory = $true)]
+        [int]$TakeLast
+    )
+
+    if (-not (Test-NapCatAvailable)) {
+        return $null
+    }
+
+    $target = Resolve-NapCatTargetByName -ConversationName $TargetConversation
+    if ($null -eq $target) {
+        return $null
+    }
+
+    $history = Get-NapCatMessageHistory -Target $target -Count $TakeLast
+    $messages = @(
+        $history |
+            Sort-Object time, message_seq |
+            Select-Object -Last $TakeLast |
+            ForEach-Object { Convert-NapCatMessageToText -MessageObject $_ }
+    )
+
+    return [pscustomobject]@{
+        mode_used = "adapter"
+        conversation_name = $target.matched_name
+        messages = $messages
+        confidence = 0.98
+        details = @{
+            adapter = "napcat"
+            target_type = $target.target_type
+            target_id = $target.target_id
+        }
+    }
+}
 
 function Invoke-UiaRead {
     param(
@@ -84,20 +123,35 @@ function Invoke-VisionRead {
 }
 
 try {
-    $windowContext = Get-QQWindowContext -WindowNameRegex $WindowNameRegex
-    if ($null -eq $windowContext) {
-        $result = New-QQFailureResult -Operation "read" -FailureCode "window_not_found" -Message "Could not find a QQ main window matching regex '$WindowNameRegex'." -Data @{
-            conversation_name = $ConversationName
-            mode_requested = $Mode
-        }
-        ConvertTo-QQJson -InputObject $result
-        exit 1
-    }
-
     $readResult = $null
     $attempts = @()
+    $windowContext = $null
 
-    if ($Mode -in @("auto", "uia")) {
+    if ($Mode -in @("auto", "adapter")) {
+        try {
+            $attempts += "adapter"
+            $readResult = Invoke-AdapterRead -TargetConversation $ConversationName -TakeLast $Last
+        } catch {
+            if ($Mode -eq "adapter") {
+                throw
+            }
+        }
+    }
+
+    if ($null -eq $readResult -and $Mode -ne "adapter") {
+        $windowContext = Get-QQWindowContext -WindowNameRegex $WindowNameRegex
+        if ($null -eq $windowContext) {
+            $result = New-QQFailureResult -Operation "read" -FailureCode "window_not_found" -Message "Could not find a QQ main window matching regex '$WindowNameRegex', and no adapter result was available." -Data @{
+                conversation_name = $ConversationName
+                mode_requested = $Mode
+                attempted_modes = $attempts
+            }
+            ConvertTo-QQJson -InputObject $result
+            exit 1
+        }
+    }
+
+    if ($null -eq $readResult -and $Mode -in @("auto", "uia")) {
         try {
             $attempts += "uia"
             $readResult = Invoke-UiaRead -WindowContext $windowContext -TargetConversation $ConversationName -TakeLast $Last

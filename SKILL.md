@@ -7,18 +7,20 @@ description: Read recent messages from QQ desktop chats and send text or images 
 
 ## Overview
 
-Use this skill to automate the Windows QQ desktop client through a mixed strategy: UI Automation first, OCR plus anchor-based positioning second, and clipboard plus simulated input as the final fallback. Read visible chat content, send text, send images, and inspect either the UI tree or OCR regions for calibration.
+Use this skill to work with QQ through a mixed strategy: NapCatQQ / OneBot first, UI Automation second, OCR plus anchor-based positioning third, and clipboard plus simulated input as the final fallback. Read recent chat content, send text, send images, and inspect either the UI tree or OCR regions for calibration.
 
 ## Prerequisites
 
 1. Run Windows QQ desktop in a logged-in interactive desktop session.
-2. Keep the QQ main window visible and not covered by a modal dialog.
-3. Install local `tesseract` and Chinese language data if vision mode is required.
-4. Use absolute image paths when sending images.
+2. Prefer NapCatQQ with OneBot HTTP enabled on `127.0.0.1:3004`.
+3. Keep the QQ main window visible and not covered by a modal dialog when desktop fallback is required.
+4. Install local `tesseract` and Chinese language data if vision mode is required.
+5. Use absolute image paths when sending images.
 
 ## Mode Precedence
 
-- `auto`: Try UI Automation first, then OCR plus anchor matching.
+- `auto`: Try NapCat / OneBot first, then UI Automation, then OCR plus anchor matching.
+- `adapter`: Use only NapCat / OneBot.
 - `uia`: Use only the control-tree path.
 - `vision`: Use only screenshot, OCR, and simulated input.
 
@@ -48,7 +50,7 @@ Returns JSON with:
 - `confidence`
 - `failure_code` on error
 
-Vision mode only returns visible on-screen message lines.
+Adapter mode returns recent history through OneBot. Vision mode only returns visible on-screen message lines.
 
 ### Send plain text
 
@@ -58,10 +60,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\send_qq_message.ps1 -Conversa
 
 Behavior:
 
-- Open the target conversation.
-- Verify the target title before sending.
-- Use `ValuePattern` when available.
-- Fall back to focusing the input region, pasting, and pressing Enter.
+- Resolve the target by friend remark, nickname, or group name.
+- Send through OneBot when NapCat is available.
+- Fall back to desktop title verification, input focus, paste, and Enter when adapter is unavailable.
 
 ### Send an image
 
@@ -92,6 +93,17 @@ Behavior:
 4. Re-run `read_qq_messages.ps1` or `send_qq_message.ps1` in `vision` mode to isolate OCR issues.
 5. Switch back to `auto` after calibration.
 
+## NapCat Defaults
+
+- Base URL: `http://127.0.0.1:3004`
+- Token: `napcat-local-token`
+
+Override with environment variables when needed:
+
+- `NAPCAT_HOST`
+- `NAPCAT_PORT`
+- `NAPCAT_TOKEN`
+
 ## Resources
 
 ### Scripts
@@ -99,6 +111,7 @@ Behavior:
 - `scripts/inspect_qq_ui.ps1`: Export UI tree and optional screenshot metadata.
 - `scripts/read_qq_messages.ps1`: Read visible messages from a target conversation.
 - `scripts/send_qq_message.ps1`: Send text or an image to a target conversation.
+- `scripts/qq_napcat_common.ps1`: Shared NapCat / OneBot helpers for contact lookup, history reads, and message sends.
 - `scripts/qq_uia_common.ps1`: Shared UI Automation, clipboard, and input helpers.
 - `scripts/qq_visual_common.ps1`: Screenshot capture, OCR, anchor matching, and visual-region helpers.
 
