@@ -29,7 +29,8 @@ function Invoke-NapCatAction {
     $uri = "$($endpoint.BaseUri)/$Action"
     $headers = @{ Authorization = "Bearer $($endpoint.Token)" }
     $body = ($Payload | ConvertTo-Json -Depth 12 -Compress)
-    return Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -Body $body -ContentType "application/json"
+    $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+    return Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -Body $bodyBytes -ContentType "application/json; charset=utf-8"
 }
 
 function Test-NapCatAvailable {
