@@ -89,7 +89,7 @@ Behavior:
 
 1. Run `inspect_qq_ui.ps1` first.
 2. If UI Automation works, tune selectors in `qq_uia_common.ps1`.
-3. If UI Automation fails, inspect OCR anchors and region rules in [vision-calibration.md](/C:/Users/86159/Documents/Playground/skills/qq-desktop-messaging/references/vision-calibration.md).
+3. If UI Automation fails, inspect OCR anchors and region rules in [vision-calibration.md](references/vision-calibration.md).
 4. Re-run `read_qq_messages.ps1` or `send_qq_message.ps1` in `vision` mode to isolate OCR issues.
 5. Switch back to `auto` after calibration.
 
@@ -117,5 +117,5 @@ Override with environment variables when needed:
 
 ### References
 
-- [selector-calibration.md](/C:/Users/86159/Documents/Playground/skills/qq-desktop-messaging/references/selector-calibration.md): Tune UI Automation selectors.
-- [vision-calibration.md](/C:/Users/86159/Documents/Playground/skills/qq-desktop-messaging/references/vision-calibration.md): Tune OCR anchors and region boundaries.
+- [selector-calibration.md](references/selector-calibration.md): Tune UI Automation selectors.
+- [vision-calibration.md](references/vision-calibration.md): Tune OCR anchors and region boundaries.
